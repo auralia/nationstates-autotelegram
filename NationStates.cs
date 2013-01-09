@@ -643,7 +643,7 @@ namespace NationStates_AutoTelegram
 
                 lastTelegramSending = DateTime.Now;
 
-                worker.ReportProgress((int)((((double)telegramListIndex) / telegramList.Count) * 100), new Log(DateTime.Now.ToLongTimeString() + ": Telegram sent to " + recipient.Replace("_", " ").ToUpper() + ".", Log.Information));
+                worker.ReportProgress((int)((((double)telegramListIndex + 1) / telegramList.Count) * 100), new Log(DateTime.Now.ToLongTimeString() + ": Telegram sent to " + toID(recipient) + ".", Log.Information));
                 return true;
             }
             catch (Exception ex)
@@ -651,7 +651,7 @@ namespace NationStates_AutoTelegram
                 lastTelegramSending = DateTime.Now;
 
                 if (!e.Cancel)
-                    worker.ReportProgress((int)((((double)telegramListIndex) / telegramList.Count) * 100), new Log(DateTime.Now.ToLongTimeString() + ": Telegram could not be sent to " + recipient.Replace("_", " ").ToUpper() + ". (" + ex.GetType() + ": " + ex.Message + " - " + ex.StackTrace + ")", Log.Warning));
+                    worker.ReportProgress((int)((((double)telegramListIndex + 1) / telegramList.Count) * 100), new Log(DateTime.Now.ToLongTimeString() + ": Telegram could not be sent to " + toID(recipient) + ". (" + ex.GetType() + ": " + ex.Message + " - " + ex.StackTrace + ")", Log.Warning));
 
                 return false;
             }
