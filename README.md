@@ -36,6 +36,8 @@ NationStates AutoTelegram automatically sends telegrams to NationStates nations.
 	Current user (responsible for use): <username> (<email>)`
 
 ## Changelog ##
+* Version 0.3.1:
+	* Bug fixes
 * Version 0.3.0:
 	* UI redesign
 	* Bug fixes

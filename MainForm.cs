@@ -147,11 +147,11 @@ namespace NationStates_AutoTelegram
                 nationsIncludeAllWACheckBox.Checked && !ns.addAllWA() || 
                 nationsIncludeAllDelegatesCheckBox.Checked && !ns.addAllDelegates() || 
                 !nationsIncludeTextBox.Text.Equals("") && !ns.addNations(nationsIncludeTextBox.Text, nationsIncludeLimitWACheckBox.Checked, nationsIncludeLimitDelegatesCheckBox.Checked) ||
-                !nationsExcludeTextBox.Text.Equals("") && !ns.addRegions(nationsExcludeTextBox.Text, regionsIncludeLimitWACheckBox.Checked, regionsIncludeLimitDelegatesCheckBox.Checked) ||
+                !regionsIncludeTextBox.Text.Equals("") && !ns.addRegions(regionsIncludeTextBox.Text, regionsIncludeLimitWACheckBox.Checked, regionsIncludeLimitDelegatesCheckBox.Checked) ||
                 !tagsIncludeTextBox.Text.Equals("") && !ns.addTags(tagsIncludeTextBox.Text, tagsIncludeLimitWACheckBox.Checked, tagsIncludeLimitDelegatesCheckBox.Checked) ||
                 nationsExcludeAllWACheckBox.Checked && !ns.removeAllWA() ||
-                nationsExcludeAllDelegatesCheckBox.Checked && !ns.removeAllDelegates() || 
-                !regionsIncludeTextBox.Text.Equals("") && !ns.removeNations(regionsIncludeTextBox.Text, nationsExcludeLimitWACheckBox.Checked, nationsExcludeLimitDelegatesCheckBox.Checked) ||
+                nationsExcludeAllDelegatesCheckBox.Checked && !ns.removeAllDelegates() ||
+                !nationsExcludeTextBox.Text.Equals("") && !ns.removeNations(nationsExcludeTextBox.Text, nationsExcludeLimitWACheckBox.Checked, nationsExcludeLimitDelegatesCheckBox.Checked) ||
                 !regionsExcludeTextBox.Text.Equals("") && !ns.removeRegions(regionsExcludeTextBox.Text, regionsExcludeLimitWACheckBox.Checked, regionsExcludeLimitDelegatesCheckBox.Checked) ||
                 !tagsExcludeTextBox.Text.Equals("") && !ns.removeTags(tagsExcludeTextBox.Text, tagsExcludeLimitWACheckBox.Checked, tagsExcludeLimitDelegatesCheckBox.Checked))
             {
