@@ -582,7 +582,7 @@ namespace NationStates_AutoTelegram
                 }
 
                 String newMessage = message;
-                if (newMessage.IndexOf("%NATION") != -1)
+                if (newMessage.IndexOf("%NATION%") != -1)
                 {
                     String name = getNationName(recipient);
                     if (name != null)
