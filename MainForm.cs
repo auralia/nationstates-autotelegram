@@ -1,16 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.IO;
 using System.Linq;
-using System.Net;
-using System.Text;
-using System.Web;
-using System.Windows.Forms;
-using System.Xml;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 
 namespace NationStates_AutoTelegram
 {
@@ -26,14 +19,16 @@ namespace NationStates_AutoTelegram
         private void MainForm_Load(object sender, EventArgs e)
         {
             // Show disclaimer
-            if (MessageBox.Show("Make sure you have read and understood the NationStates mass telegramming and scripting rules before using this program.\n\nBy clicking OK, you agree that the author of this program is not responsible for any breaches of NationStates rules resulting from your use of this program.", "Disclaimer", MessageBoxButtons.OKCancel) == System.Windows.Forms.DialogResult.Cancel)
+            if (MessageBox.Show("You must read and understand the NationStates mass telegramming and scripting rules before using this program. By clicking OK, you agree that the author of the Software is not responsible for any breaches of NationStates rules resulting from your use of this program.", "Disclaimer", MessageBoxButtons.OKCancel) == System.Windows.Forms.DialogResult.Cancel)
+            {
                 this.Close();
+            }
 
             // Load version
             nameVersionLabel.Text = "NationStates AutoTelegram " + Application.ProductVersion;
 
-            // Select telegram text box
-            telegramTextBox.Select();
+            // Select client key text box
+            clientKeyTextBox.Select();
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -47,32 +42,57 @@ namespace NationStates_AutoTelegram
 
         private void startButton_Click(object sender, EventArgs e)
         {
-            if (startButton.Text.Equals("Start")) // Button changes from Start to Pause/Resume
+            if (startButton.Text.Equals("Start"))
             {
-                // Confirm validity of settings
-                if (usernameTextBox.Text.Equals(""))
+                // Sanity checks
+                if (!Regex.IsMatch(clientKeyTextBox.Text, "^[A-Z0-9]+$", RegexOptions.IgnoreCase))
                 {
-                    MessageBox.Show("Username field cannot be left blank.", "");
+                    MessageBox.Show("The client key field is empty or contains unacceptable characters.", "");
                 }
-                else if (passwordTextBox.Text.Equals(""))
+                else if (!Regex.IsMatch(telegramIDTextBox.Text, "^[0-9]+$", RegexOptions.IgnoreCase))
                 {
-                    MessageBox.Show("Password field cannot be left blank.", "");
+                    MessageBox.Show("The telegram ID field is empty or contains unacceptable characters.", "");
                 }
-                else if (!(Regex.IsMatch(emailTextBox.Text, @"^(?("")(""[^""]+?""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-\w]*[0-9a-z]*\.)+[a-z0-9]{2,17}))$", RegexOptions.IgnoreCase)))
-                { // Regex borrowed from Microsoft <http://msdn.microsoft.com/en-us/library/01escwtf.aspx>
-                    MessageBox.Show("A valid email address must be provided.", "");
+                else if (!Regex.IsMatch(secretKeyTextBox.Text, "^[A-Z0-9]+$", RegexOptions.IgnoreCase))
+                {
+                    MessageBox.Show("The secret key field is empty or contains unacceptable characters.", "");
                 }
-                // Start process
+                else if (!Regex.IsMatch(recipientsTextBox.Text, "^.+$", RegexOptions.IgnoreCase))
+                {
+                    MessageBox.Show("The recipient list field is empty.", "");
+                }
                 else
                 {
+                    List<String> recipientData = recipientsTextBox.Text.Split(',').ToList<String>();
+                    foreach (String entry in recipientData)
+                    {
+                        if (!Regex.IsMatch(entry.Trim(), "^([+-])?(nation|region|tag|special|recruitment):([\\w\\s]+)$", RegexOptions.IgnoreCase))
+                        {
+                            MessageBox.Show("The recipient list field contains invalid data.", "");
+                            return;
+                        }
+                        else if (Regex.IsMatch(entry.Trim(), "^([+-])?special:([\\w\\s]+)$", RegexOptions.IgnoreCase) && !Regex.IsMatch(entry.Trim(), "^([+-])?special:(\\s+)?(all|members|delegates|new)$", RegexOptions.IgnoreCase))
+                        {
+                            MessageBox.Show("The recipient list field contains invalid data.", "");
+                            return;
+                        }
+                        else if (Regex.IsMatch(entry.Trim(), "^([+-])?recruitment:([\\w\\s]+)$", RegexOptions.IgnoreCase) && !Regex.IsMatch(entry.Trim(), "^([+-])?recruitment:(\\s+)?(new)$", RegexOptions.IgnoreCase))
+                        {
+                            MessageBox.Show("The recipient list field contains invalid data.", "");
+                            return;
+                        }
+                    }
+
                     // Reset
+                    logTextBox.Clear();
                     progressBar.Value = 0;
                     startButton.Text = "Pause";
                     cancelButton.Enabled = true;
 
-                    backgroundWorker.RunWorkerAsync();
+                    backgroundWorker.RunWorkerAsync(recipientsTextBox.Text.Split(',').ToList<String>());
                 }
             }
+            // Pause/resume functionality
             else if (startButton.Text.Equals("Pause"))
             {
                 startButton.Text = "Resume";
@@ -92,81 +112,194 @@ namespace NationStates_AutoTelegram
             backgroundWorker.CancelAsync();
         }
 
-        private void listView_Resize(object sender, EventArgs e)
+        private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
-            // Resize listview column to full width of window
-            listView.Columns[0].Width = -2;
-        }
+            ns = new NationStates(backgroundWorker, e, clientKeyTextBox.Text, telegramIDTextBox.Text, secretKeyTextBox.Text, recruitmentRadioButton.Checked);
 
-        private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            SaveFileDialog save = new SaveFileDialog();
-            save.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            save.Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*";
+            backgroundWorker.ReportProgress(-1, new Log("Creating list of recipients (this may take a while)..."));
+
+            List<String> nationsInclude = new List<String>(), regionsInclude = new List<String>(), tagsInclude = new List<String>(), nationsExclude = new List<String>(), regionsExclude = new List<String>(), tagsExclude = new List<String>();
+            Boolean allInclude = false, membersInclude = false, delegatesInclude = false, newInclude = false, allExclude = false, membersExclude = false, delegatesExclude = false, newExclude = false;
+            Boolean recruitment = false;
+
+            List<String> recipientData = (List<String>) e.Argument;
+
+            // Generate list of recipients
+            foreach (String entry in recipientData)
+            {
+                Match match = Regex.Match(entry.Trim(), "^([+-])?(nation|region|tag|special|recruitment):([\\w\\s]+)$", RegexOptions.IgnoreCase);
+                if (match.Groups[2].ToString().ToLower().Equals("nation"))
+                {
+                    if (match.Groups[1].ToString().Equals("+") || match.Groups[1].ToString().Equals(""))
+                    {
+                        nationsInclude.Add(match.Groups[3].ToString().Trim());
+                    }
+                    else if (match.Groups[1].ToString().Equals("-"))
+                    {
+                        nationsExclude.Add(match.Groups[3].ToString().Trim());
+                    }
+                }
+                else if (match.Groups[2].ToString().ToLower().Equals("region"))
+                {
+                    if (match.Groups[1].ToString().Equals("+") || match.Groups[1].ToString().Equals(""))
+                    {
+                        regionsInclude.Add(match.Groups[3].ToString().Trim());
+                    }
+                    else if (match.Groups[1].ToString().Equals("-"))
+                    {
+                        regionsExclude.Add(match.Groups[3].ToString().Trim());
+                    }
+                }
+                else if (match.Groups[2].ToString().ToLower().Equals("tag"))
+                {
+                    if (match.Groups[1].ToString().Equals("+") || match.Groups[1].ToString().Equals(""))
+                    {
+                        tagsInclude.Add(match.Groups[3].ToString().Trim());
+                    }
+                    else if (match.Groups[1].ToString().Equals("-"))
+                    {
+                        tagsExclude.Add(match.Groups[3].ToString().Trim());
+                    }
+                }
+                else if (match.Groups[2].ToString().ToLower().Equals("special"))
+                {
+                    if (match.Groups[1].ToString().Equals("+") || match.Groups[1].ToString().Equals(""))
+                    {
+                        if (match.Groups[3].ToString().Trim().ToLower().Equals("all"))
+                        {
+                            allInclude = true;
+                        }
+                        else if (match.Groups[3].ToString().Trim().ToLower().Equals("members"))
+                        {
+                            membersInclude = true;
+                        }
+                        else if (match.Groups[3].ToString().Trim().ToLower().Equals("delegates"))
+                        {
+                            delegatesInclude = true;
+                        }
+                        else if (match.Groups[3].ToString().Trim().ToLower().Equals("new"))
+                        {
+                            newInclude = true;
+                        }
+                    }
+                    else if (match.Groups[1].ToString().Equals("-"))
+                    {
+                        if (match.Groups[3].ToString().Trim().ToLower().Equals("all"))
+                        {
+                            allExclude = true;
+                        }
+                        else if (match.Groups[3].ToString().Trim().ToLower().Equals("members"))
+                        {
+                            membersExclude = false;
+                        }
+                        else if (match.Groups[3].ToString().Trim().ToLower().Equals("delegates"))
+                        {
+                            delegatesExclude = false;
+                        }
+                        else if (match.Groups[3].ToString().Trim().ToLower().Equals("new"))
+                        {
+                            newExclude = false;
+                        }
+                    }
+                }
+                else if (match.Groups[2].ToString().ToLower().Equals("recruitment"))
+                {
+                    if (match.Groups[3].ToString().Trim().ToLower().Equals("new"))
+                    {
+                        recruitment = true;
+                    }
+                }
+            }
 
             try
             {
-                if (save.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                if (allInclude)
                 {
-                    StreamWriter sw = new StreamWriter(new FileStream(save.FileName, FileMode.Create, FileAccess.Write));
-                    sw.WriteLine("Version: " + Application.ProductVersion);
-                    foreach (ListViewItem i in listView.Items) // Save contents of ListView
-                    {
-                        sw.WriteLine(i.Text);
-                    }
-                    sw.Close();
+                    ns.addAllNations();
                 }
+                if (membersInclude)
+                {
+                    ns.addAllMembers();
+                }
+                if (delegatesInclude)
+                {
+                    ns.addAllDelegates();
+                }
+                if (newInclude)
+                {
+                    ns.addAllNew();
+                }
+
+                ns.addNations(nationsInclude);
+                ns.addRegions(regionsInclude);
+                ns.addTags(tagsInclude);
+
+                if (allExclude)
+                {
+                    ns.removeAllNations();
+                }
+                if (membersExclude)
+                {
+                    ns.removeAllMembers();
+                }
+                if (delegatesExclude)
+                {
+                    ns.removeAllDelegates();
+                }
+                if (newExclude)
+                {
+                    ns.removeAllNew();
+                }
+
+                ns.removeNations(nationsExclude);
+                ns.removeRegions(regionsExclude);
+                ns.removeTags(tagsExclude);
             }
             catch (Exception)
             {
-                MessageBox.Show("Log could not be saved.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void clearToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            listView.Items.Clear();
-        }
-
-        private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
-        {
-            BackgroundWorker worker = (BackgroundWorker) sender;
-
-            ns = new NationStates(worker, e, usernameTextBox.Text, passwordTextBox.Text, emailTextBox.Text, telegramTextBox.Text);
-
-            if (!ns.login())
-            {
                 e.Result = "ERROR";
                 return;
             }
 
-            worker.ReportProgress(-1, new Log(DateTime.Now.ToLongTimeString() + ": Adding recipients (this may take a while)...", Log.Information));
+            backgroundWorker.ReportProgress(-1, new Log("Sending telegrams..."));
 
-            // Add recipients
-            if (nationsIncludeAllNationsCheckBox.Checked && !ns.addAllNations() ||
-                nationsIncludeAllWACheckBox.Checked && !ns.addAllWA() || 
-                nationsIncludeAllDelegatesCheckBox.Checked && !ns.addAllDelegates() || 
-                !nationsIncludeTextBox.Text.Equals("") && !ns.addNations(nationsIncludeTextBox.Text, nationsIncludeLimitWACheckBox.Checked, nationsIncludeLimitDelegatesCheckBox.Checked) ||
-                !regionsIncludeTextBox.Text.Equals("") && !ns.addRegions(regionsIncludeTextBox.Text, regionsIncludeLimitWACheckBox.Checked, regionsIncludeLimitDelegatesCheckBox.Checked) ||
-                !tagsIncludeTextBox.Text.Equals("") && !ns.addTags(tagsIncludeTextBox.Text, tagsIncludeLimitWACheckBox.Checked, tagsIncludeLimitDelegatesCheckBox.Checked) ||
-                nationsExcludeAllWACheckBox.Checked && !ns.removeAllWA() ||
-                nationsExcludeAllDelegatesCheckBox.Checked && !ns.removeAllDelegates() ||
-                !nationsExcludeTextBox.Text.Equals("") && !ns.removeNations(nationsExcludeTextBox.Text, nationsExcludeLimitWACheckBox.Checked, nationsExcludeLimitDelegatesCheckBox.Checked) ||
-                !regionsExcludeTextBox.Text.Equals("") && !ns.removeRegions(regionsExcludeTextBox.Text, regionsExcludeLimitWACheckBox.Checked, regionsExcludeLimitDelegatesCheckBox.Checked) ||
-                !tagsExcludeTextBox.Text.Equals("") && !ns.removeTags(tagsExcludeTextBox.Text, tagsExcludeLimitWACheckBox.Checked, tagsExcludeLimitDelegatesCheckBox.Checked))
+            // Send normal telegrams
+            while (ns.sendNextTelegram()) 
             {
-                e.Result = "ERROR";
-                return;
+                if (backgroundWorker.CancellationPending)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+                else
+                {
+                    while (ns.paused)
+                    {
+                        System.Threading.Thread.Sleep(1000);
+                    }
+                }
             }
 
-            worker.ReportProgress(-1, new Log(DateTime.Now.ToLongTimeString() + ": Sending telegrams...", Log.Information));
+            backgroundWorker.ReportProgress(0, new Log("Sending recruitment telegrams..."));
 
-            while (ns.sendNextTelegram()) { }
-
-            if (!e.Cancel)
+            // Send recruitment telegrams
+            while (recruitment && ns.sendNextRecruitmentTelegram())
             {
-                e.Result = "SUCCESS";
+                if (backgroundWorker.CancellationPending)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+                else
+                {
+                    while (ns.paused)
+                    {
+                        System.Threading.Thread.Sleep(1000);
+                    }
+                }
             }
+
+            e.Result = "SUCCESS";
         }
 
         private void backgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -175,88 +308,47 @@ namespace NationStates_AutoTelegram
             if (e.ProgressPercentage != -1)
                 progressBar.Value = e.ProgressPercentage;
 
-            // Add log entry to ListView
-            listView.Items.Add(((Log)e.UserState).entry, ((Log)e.UserState).type);
-            listView.EnsureVisible(listView.Items.Count - 1);
+            if (e.UserState is Log)
+            {
+                // Add log entry to ListView
+                logTextBox.Text += (logTextBox.Text.Equals("") ? "" : "\n") + ((Log)e.UserState).entry;
+
+                // Ensure new entry is visible
+                logTextBox.Select(logTextBox.TextLength - 1, 0);
+                logTextBox.ScrollToCaret();
+            }
         }
 
         private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            ns.logout();
-
+            // Final log entry
             if (e.Cancelled)
-                listView.Items.Add(DateTime.Now.ToLongTimeString() + ": Process cancelled by user.", Int32.Parse(Log.Error.ToString()));
+                logTextBox.Text += "\n" + new Log("Cancelled by user.").entry;
             else if (((String)e.Result).Equals("ERROR"))
-                listView.Items.Add(DateTime.Now.ToLongTimeString() + ": Process cancelled due to errors.", Int32.Parse(Log.Error.ToString()));
+                logTextBox.Text += "\n" + new Log("Cancelled due to errors.").entry;
             else if (((String)e.Result).Equals("SUCCESS"))
-                listView.Items.Add(DateTime.Now.ToLongTimeString() + ": Process completed.", Int32.Parse(Log.Information.ToString()));
+                logTextBox.Text += "\n" + new Log("Completed.").entry;
 
-            listView.EnsureVisible(listView.Items.Count - 1);
+            // Ensure new entry is visible
+            logTextBox.Select(logTextBox.TextLength - 1, 0);
+            logTextBox.ScrollToCaret();
+
+            // Set progress bar value
             progressBar.Value = 100;
 
             // Reset
             startButton.Text = "Start";
             cancelButton.Enabled = false;
         }
+    }
 
-        private void nationToolStripButton_Click(object sender, EventArgs e)
+    class Log
+    {
+        public String entry;
+
+        public Log(String entry)
         {
-            telegramTextBox.SelectedText = "%NATION%";
-        }
-
-        private void regionToolStripButton_Click(object sender, EventArgs e)
-        {
-            telegramTextBox.SelectedText = "%REGION%";
-        }
-
-        private void clearToolStripButton_Click(object sender, EventArgs e)
-        {
-            telegramTextBox.Clear();
-        }
-
-        private void nationsIncludeAllDelegatesCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            if (nationsIncludeAllDelegatesCheckBox.Checked)
-            {
-                MessageBox.Show("If you are running a proposal endorsement campaign, remember to exclude the No GA Campaigning or No SC Campaigning tags, as appropriate. You are required to do this under NationStates rules.");
-            }
-        }
-
-        private void nationsIncludeLimitDelegatesCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            if (nationsIncludeLimitDelegatesCheckBox.Checked)
-            {
-                MessageBox.Show("If you are running a proposal endorsement campaign, remember to exclude the No GA Campaigning or No SC Campaigning tags, as appropriate. You are required to do this under NationStates rules.");
-            }
-        }
-
-        private void regionsIncludeLimitDelegatesCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            if (regionsIncludeLimitDelegatesCheckBox.Checked)
-            {
-                MessageBox.Show("If you are running a proposal endorsement campaign, remember to exclude the No GA Campaigning or No SC Campaigning tags, as appropriate. You are required to do this under NationStates rules.");
-            }
-        }
-
-        private void tagsIncludeLimitDelegatesCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            if (tagsIncludeLimitDelegatesCheckBox.Checked)
-            {
-                MessageBox.Show("If you are running a proposal endorsement campaign, remember to exclude the No GA Campaigning or No SC Campaigning tags, as appropriate. You are required to do this under NationStates rules.");
-            }
-        }
-
-        private void tabControl_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (backgroundWorker.IsBusy)
-            {
-                if (tabControl.SelectedTab == textTabPage || tabControl.SelectedTab == senderTabPage || tabControl.SelectedTab == recipientsTabPage)
-                {
-                    MessageBox.Show("This tab page cannot be shown while telegrams are being sent.");
-
-                    tabControl.SelectedTab = sendTabPage;
-                }
-            }
+            this.entry = DateTime.Now.ToLongTimeString() + ": " + entry;
         }
     }
 }

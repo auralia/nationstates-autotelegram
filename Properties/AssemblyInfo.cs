@@ -7,7 +7,7 @@ using System.Resources;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("NationStates AutoTelegram")]
-[assembly: AssemblyDescription("NationStates AutoTelegram automatically sends telegrams to NationStates nations.")]
+[assembly: AssemblyDescription("NationStates AutoTelegram is a free and open source client for the NationStates Telegrams API.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Auralia")]
 [assembly: AssemblyProduct("NationStates AutoTelegram")]
@@ -33,6 +33,6 @@ using System.Resources;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.3.1.0")]
-[assembly: AssemblyFileVersion("0.3.1.0")]
+[assembly: AssemblyVersion("0.4.0.0")]
+[assembly: AssemblyFileVersion("0.4.0.0")]
 [assembly: NeutralResourcesLanguageAttribute("en-CA")]

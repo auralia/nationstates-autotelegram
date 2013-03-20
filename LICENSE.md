@@ -8,6 +8,4 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 You must read and understand the [NationStates mass telegramming and scripting rules](http://forum.nationstates.net/viewtopic.php?f=16&t=74486) before using the Software. You agree that the author of the Software is not responsible for any breaches of NationStates rules resulting from your use of the Software.
 
-This program includes [code from Coffee and Crack](http://forum.nationstates.net/viewtopic.php?p=8502718) and [code from Microsoft](http://msdn.microsoft.com/en-us/library/01escwtf.aspx).
-
 This program uses icons from the [Silk Icon Set](http://www.famfamfam.com/lab/icons/silk/) and the [Tango Desktop Project](http://tango.freedesktop.org/).
