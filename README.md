@@ -13,7 +13,7 @@ NationStates AutoTelegram is a free and open source client for the NationStates 
 
 ### Tutorial ###
 1. Obtain an API client key, and type it into the *API client key* textbox on the *Telegram* tab page.
-	* You can request an API client key from the NationStates moderators by submitting a [Getting Help Request](http://www.nationstates.net/page=help) explaining why you wish to send mass telegrams. If your request is approved, you will receive a client key by telegram. 
+	* You can request an API client key from the NationStates moderators by submitting a [Getting Help Request](http://www.nationstates.net/page=help). You must provide a client name that identifies either you, your region, or the script's function (e.g. "<region> Recruiting" or "<author> Campaign"). You must also provide a short description (e.g. "For <regional> recruitment of both new and existing nations."). The moderators don't want or need a copy of your proposed telegram, just a one-line description. If your request is approved, you will receive a client key by telegram.
 	* Do not share your client key with anyone.
 	* If you obtain a new telegram ID and secret key (see below), you do **not** need to request a new client key.
 2. Obtain a telegram ID and secret key, and type them into the *Telegram ID* and *Secret key* textboxes respectively on the *Telegram* tab page.
@@ -28,7 +28,7 @@ NationStates AutoTelegram is a free and open source client for the NationStates 
 		* `region:<region>` : sends telegram to all nations in specified region
 		* `tag:<tag>` : sends telegrams to all nations in regions with the specified tag
 		* `special:(all, members, delegates, new)` : sends telegrams to (all nations, all World Assembly members, all World Assembly delegates, 50 new nations)
-		* `recruitment:new` : enables recruitment mode for new nations, which sends telegrams to new nations as they are created until the program is manually stopped; in the future this mode may support refounded nations through "recruitment:refounded"
+		* `recruitment:new` : enables recruitment mode for new nations, which sends telegrams to new nations as they are created until the program is manually stopped; in the future this mode may support refounded nations through `recruitment:refounded`
 	* Multiple recipients can be specified, separated by commas (e.g. `nation:Auralia, nation:Christian Democrats` sends telegrams to Auralia and Christian Democrats) 
 	* Appending a negative sign to any recipient specifically excludes that recipient, even if explicitly included elsewhere (e.g. `region:Catholic, -nation:Auralia` will send telegrams to all nations in Catholic except Auralia).
 	* The following are common usage cases:
