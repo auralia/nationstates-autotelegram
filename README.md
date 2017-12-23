@@ -1,1 +1,1 @@
-**NationStates AutoTelegram has been replaced by [nsautotg-web](https://github.com/auralia/nsautotg-web) and is no longer maintained.**
+**NationStates AutoTelegram has been replaced by [nstg-web](https://github.com/auralia/nstg-web) and is no longer maintained.**
